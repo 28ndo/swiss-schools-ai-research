@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI &amp; Swiss Education Research</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #181b22;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #d52b1e; /* Swiss red */
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    main {
+      max-width: 720px;
+      width: 100%;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      padding: 0.25rem 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1.15;
+      margin: 0 0 1rem;
+    }
+    p.lead {
+      font-size: 1.15rem;
+      color: var(--muted);
+      margin: 0 0 2.5rem;
+    }
+    .cards {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid #23262e;
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .card h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    footer {
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge">Research · Switzerland</span>
+    <h1>AI &amp; Swiss Education Research</h1>
+    <p class="lead">
+      Exploring how artificial intelligence is shaping teaching, learning, and
+      educational policy across Switzerland.
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <h3>Classrooms</h3>
+        <p>How AI tools support students and teachers in Swiss schools.</p>
+      </div>
+      <div class="card">
+        <h3>Higher Education</h3>
+        <p>Adoption and research at Swiss universities and institutes.</p>
+      </div>
+      <div class="card">
+        <h3>Policy</h3>
+        <p>Governance, ethics, and the future of AI in education.</p>
+      </div>
+    </div>
+
+    <footer>
+      Work in progress — more research and resources coming soon.
+    </footer>
+  </main>
+</body>
+</html>

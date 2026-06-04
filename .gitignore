@@ -1,0 +1,4 @@
+# Internal files — never publish to the live site
+PRODUCT.md
+version-*.html
+.DS_Store

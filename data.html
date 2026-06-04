@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survey Dashboard — AI in Swiss Boarding Schools</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..500;9..600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f3ee;
+  --surface: #ffffff;
+  --surface-2: #f9f8f5;
+  --border: #e2ddd4;
+  --text: #1a1a28;
+  --text-2: #5c5a6e;
+  --text-3: #9997aa;
+  --navy: #1e3054;
+  /* 7-pt Likert (students) */
+  --c-sd:  #6b1212;
+  --c-d:   #c05050;
+  --c-swd: #e0a0a0;
+  --c-n:   #cac8c0;
+  --c-swa: #90b8d8;
+  --c-a:   #4888c0;
+  --c-sa:  #1c4f96;
+  /* 5-pt Likert (teachers) — reuse compatible subset */
+  --t-sd: #8B1E1E;
+  --t-d:  #d67a7a;
+  --t-n:  #cac8c0;
+  --t-a:  #6fa4d4;
+  --t-sa: #1c4f96;
+  --font-serif: 'Crimson Pro', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --radius: 8px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+html { scroll-behavior: smooth; }
+
+/* ── TOP BAR ── */
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; font-size: 14px; }
+
+#top-bar {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--navy);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 54px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.top-title {
+  font-family: var(--font-serif); font-size: 14px; font-weight: 300;
+  color: rgba(255,255,255,0.7); letter-spacing: 0.05em;
+}
+.top-title strong { font-weight: 600; color: rgba(255,255,255,0.92); font-style: italic; }
+.view-toggle {
+  display: flex; background: rgba(0,0,0,0.25); border-radius: 9px; padding: 4px; gap: 2px;
+}
+.toggle-btn {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  padding: 7px 22px; border-radius: 6px; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.6); background: transparent;
+  letter-spacing: 0.02em; transition: all .22s;
+}
+.toggle-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.toggle-btn.active { color: var(--navy); background: #fff; font-weight: 600; }
+
+/* ── VIEW WRAPPERS ── */
+.view-wrapper { display: flex; flex: 1; }
+
+/* ── SIDEBAR ── */
+aside.sidenav {
+  width: 220px; min-width: 220px; background: var(--navy); color: #fff;
+  padding: 28px 0; display: flex; flex-direction: column;
+  position: sticky; top: 54px; height: calc(100vh - 54px); overflow-y: auto;
+}
+.nav-logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 12px; }
+.nav-logo .lbl { font-family: var(--font-serif); font-size: 13px; font-weight: 300; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; line-height: 1.5; }
+.nav-logo .sub { font-size: 11px; opacity: 0.45; margin-top: 4px; }
+.nav-item { display: block; padding: 9px 24px; font-size: 12.5px; color: rgba(255,255,255,0.65); text-decoration: none; letter-spacing: 0.02em; border-left: 3px solid transparent; transition: all .2s; cursor: pointer; }
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.nav-item.active { color: #fff; border-left-color: #7eb3e8; background: rgba(255,255,255,0.08); }
+.nav-section { padding: 16px 24px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
+
+/* ── MAIN ── */
+main { flex: 1; overflow-x: hidden; padding: 0 40px 80px; max-width: 1200px; }
+section { padding-top: 56px; }
+.section-heading { font-family: var(--font-serif); font-size: 28px; font-weight: 400; color: var(--navy); letter-spacing: -0.01em; border-bottom: 2px solid var(--border); padding-bottom: 14px; margin-bottom: 28px; }
+.section-sub { font-size: 13px; color: var(--text-2); margin-bottom: 24px; margin-top: -18px; }
+
+/* ── STAT CARDS ── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+.stat-card { background: var(--surface); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+.stat-card .num { font-family: var(--font-serif); font-size: 38px; font-weight: 300; color: var(--navy); line-height: 1; }
+.stat-card .lbl { font-size: 11.5px; color: var(--text-2); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+.stat-card .sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+/* ── DEMOGRAPHICS ── */
+.demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.chart-card { background: var(--surface); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+.chart-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-2); margin-bottom: 16px; }
+.chart-wrap { height: 175px; position: relative; }
+
+/* ── STATS TOGGLE ── */
+.stats-toggle-btn { font-family: var(--font-sans); font-size: 12px; font-weight: 500; padding: 7px 16px; border-radius: 6px; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-2); letter-spacing: 0.02em; transition: all .2s; white-space: nowrap; flex-shrink: 0; }
+.stats-toggle-btn:hover { border-color: var(--navy); color: var(--navy); }
+.stats-toggle-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+.likert-meta { display: flex; gap: 10px; margin-top: 12px; overflow: hidden; max-height: 0; opacity: 0; transition: max-height .38s ease, opacity .3s ease, margin-top .3s ease; pointer-events: none; }
+.likert-meta.visible { max-height: 80px; opacity: 1; pointer-events: auto; margin-top: 12px; }
+.meta-item { flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; text-align: center; }
+.meta-val { font-family: var(--font-serif); font-size: 20px; font-weight: 300; color: var(--navy); line-height: 1.1; }
+.meta-lbl { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 3px; }
+
+/* ── CUSTOM TOOLTIP ── */
+#bar-tooltip {
+  position: fixed; pointer-events: none; z-index: 9999;
+  background: var(--navy); color: #fff;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+  padding: 6px 12px; border-radius: 6px; white-space: nowrap;
+  opacity: 0; transition: opacity .15s ease;
+  transform: translate(-50%, -100%); margin-top: -10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+#bar-tooltip.show { opacity: 1; }
+#bar-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--navy); }
+
+/* ── LIKERT GROUPS ── */
+.mx-block { margin-bottom: 36px; }
+.mx-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1.5px solid var(--border); }
+.mx-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.mx-label { font-family: var(--font-serif); font-size: 19px; font-weight: 400; color: var(--text); }
+.mx-count { font-size: 11.5px; color: var(--text-3); margin-left: 4px; }
+
+.likert-item { background: var(--surface); border-radius: var(--radius); padding: 16px 20px 14px; margin-bottom: 10px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+.likert-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.likert-label { font-size: 14px; color: var(--text); line-height: 1.4; flex: 1; }
+.rev-badge { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; color: #8b5a0a; background: #fef3e2; border: 1px solid #f0c070; border-radius: 3px; padding: 2px 6px; margin-left: 8px; white-space: nowrap; flex-shrink: 0; }
+
+.likert-bar { display: flex; height: 28px; border-radius: 4px; overflow: hidden; }
+.bar-seg { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; transition: opacity .2s; cursor: default; }
+.bar-seg:hover { opacity: 0.82; }
+
+/* Student 7-pt segments */
+.bar-sd  { background: var(--c-sd); color: rgba(255,255,255,0.92); }
+.bar-d   { background: var(--c-d);  color: rgba(255,255,255,0.92); }
+.bar-swd { background: var(--c-swd); color: rgba(80,30,30,0.85); }
+.bar-n   { background: var(--c-n);   color: rgba(60,58,70,0.75); }
+.bar-swa { background: var(--c-swa); color: rgba(20,50,100,0.85); }
+.bar-a   { background: var(--c-a);  color: rgba(255,255,255,0.92); }
+.bar-sa  { background: var(--c-sa); color: rgba(255,255,255,0.92); }
+
+/* Teacher 5-pt segments (prefix t-) */
+.bar-t-sd { background: var(--t-sd); color: rgba(255,255,255,0.9); }
+.bar-t-d  { background: var(--t-d);  color: rgba(80,30,30,0.85); }
+.bar-t-n  { background: var(--t-n);  color: rgba(60,58,70,0.75); }
+.bar-t-a  { background: var(--t-a);  color: rgba(20,50,100,0.85); }
+.bar-t-sa { background: var(--t-sa); color: rgba(255,255,255,0.9); }
+
+.likert-footer { display: flex; justify-content: space-between; margin-top: 6px; }
+.lf-item { font-size: 11px; display: flex; align-items: center; gap: 5px; }
+.lf-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+/* ── LEGEND ── */
+.likert-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; background: var(--surface); border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-2); }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+/* ── CROSSTAB ── */
+.tab-row { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+.tab-btn { background: var(--surface); border: 1.5px solid var(--border); border-radius: 6px; padding: 7px 16px; font-family: var(--font-sans); font-size: 12.5px; cursor: pointer; color: var(--text-2); transition: all .2s; }
+.tab-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.heat-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+.heat-table th { background: var(--navy); color: rgba(255,255,255,0.9); font-family: var(--font-sans); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; text-align: center; white-space: nowrap; }
+.heat-table th.item-col { text-align: left; min-width: 210px; }
+.heat-table th.total-col { border-left: 2px solid rgba(255,255,255,0.2); }
+.heat-table td { padding: 8px 12px; font-size: 12.5px; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.04); transition: filter .1s; }
+.heat-table td.item-name { text-align: left; font-size: 12.5px; color: var(--text); padding-left: 14px; line-height: 1.4; }
+.heat-table td.total-val { border-left: 2px solid var(--border); font-weight: 600; background: #f0eeea !important; }
+.heat-table tr:last-child td { border-bottom: none; }
+.heat-table tr:hover td { filter: brightness(0.96); }
+.heat-table .group-row td { background: #f4f2ee; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-2); padding: 6px 14px; }
+.n-row th { background: rgba(30,48,84,0.7) !important; font-size: 10px; font-weight: 400; font-style: italic; }
+.n-row th.item-col { text-align: left; }
+.heat-note { font-size: 11.5px; color: var(--text-3); margin-top: 10px; font-style: italic; }
+@media (max-width: 900px) { .subgroup-bar-grid { grid-template-columns: 1fr !important; } }
+.rev-note { font-size: 10.5px; color: var(--text-3); margin-top: 6px; }
+
+@media (max-width: 900px) {
+  .view-wrapper { flex-direction: column; }
+  aside.sidenav { width: 100%; height: auto; position: relative; top: 0; flex-direction: row; padding: 10px 16px; flex-wrap: wrap; gap: 4px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .demo-grid { grid-template-columns: 1fr; }
+  main { padding: 0 20px 60px; }
+  .top-title { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<div id="top-bar">
+  <div class="top-title">AI in Swiss Boarding Schools &nbsp;·&nbsp; <strong>Survey Dashboard</strong></div>
+  <div class="view-toggle">
+    <button class="toggle-btn active" id="btn-student" onclick="setView('student')">Students</button>
+    <button class="toggle-btn" id="btn-teacher" onclick="setView('teacher')">Teachers</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ STUDENT VIEW ══ -->
+<div id="view-student" class="view-wrapper">
+
+<aside class="sidenav" id="s-nav">
+  <div class="nav-logo">
+    <div class="lbl">Student Survey<br>AI in Schools</div>
+    <div class="sub">N = 276 · 5 Schools · 7-pt Likert</div>
+  </div>
+  <div class="nav-section">Sections</div>
+  <a class="nav-item active" onclick="navTo('s-demographics')">Demographics</a>
+  <a class="nav-item" onclick="navTo('s-likert')">Survey Items</a>
+  <a class="nav-item" onclick="navTo('s-crosstab')">Results by Subgroup</a>
+</aside>
+
+<main id="s-main">
+  <section id="s-demographics">
+    <h2 class="section-heading">Sample Demographics</h2>
+    <div class="stat-grid" id="s-stat-grid" style="margin-bottom:22px"></div>
+    <p class="section-sub">Percentages may not sum to 100 due to rounding.</p>
+    <div class="demo-grid">
+      <div class="chart-card"><div class="chart-title">Academic Programme</div><div class="chart-wrap"><canvas id="s-chart-program"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Graduation Year</div><div class="chart-wrap"><canvas id="s-chart-year"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">AI Usage Frequency (per school week)</div><div class="chart-wrap"><canvas id="s-chart-aifreq"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Academic Standing (self-reported)</div><div class="chart-wrap"><canvas id="s-chart-standing"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">English Language Background</div><div class="chart-wrap"><canvas id="s-chart-language"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Top-Ranked Subject Interest (ranked 1st)</div><div class="chart-wrap"><canvas id="s-chart-subject"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">AI Used Primarily in English?</div><div class="chart-wrap"><canvas id="s-chart-aienglish"></canvas></div></div>
+      <div class="chart-card" style="grid-column: 1 / -1"><div class="chart-title">How AI Was Used in the Last 30 Days (multi-select — % of 276 students)</div><div class="chart-wrap" style="height:190px"><canvas id="s-chart-aiuse"></canvas></div></div>
+    </div>
+  </section>
+
+  <section id="s-likert">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom: 2px solid var(--border); padding-bottom: 14px; margin-bottom: 28px;">
+      <h2 class="section-heading" style="border:none; padding:0; margin:0;">Survey Items — Likert Scale (1–7)</h2>
+      <button class="stats-toggle-btn" id="s-stats-toggle" onclick="toggleSStats()">Show statistics</button>
+    </div>
+    <div class="likert-legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--c-sd)"></div> Strongly disagree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--c-d)"></div> Disagree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--c-swd)"></div> Somewhat disagree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--c-n)"></div> Neutral</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--c-swa)"></div> Somewhat agree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--c-a)"></div> Agree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--c-sa)"></div> Strongly agree</div>
+    </div>
+    <div id="s-likert-container"></div>
+  </section>
+
+  <section id="s-crosstab">
+    <h2 class="section-heading">Results by Subgroup</h2>
+    <p class="section-sub">Mean scores (1–7) per Likert item across demographic segments. Cells are shaded relative to the overall mean: <span style="background:#cce0f5; padding:1px 6px; border-radius:3px; font-size:11.5px">above</span> and <span style="background:#f5cccc; padding:1px 6px; border-radius:3px; font-size:11.5px">below</span> average.</p>
+    <div class="tab-row" id="s-ct-tabs"></div>
+    <div id="s-ct-panels"></div>
+  </section>
+</main>
+
+</div><!-- /view-student -->
+
+
+<!-- ══════════════════════════════════════════════════════ TEACHER VIEW ══ -->
+<div id="view-teacher" class="view-wrapper" style="display:none">
+
+<aside class="sidenav" id="t-nav">
+  <div class="nav-logo">
+    <div class="lbl">Teacher Survey<br>AI in Schools</div>
+    <div class="sub">N = 149 · 5 Schools · 5-pt Likert</div>
+  </div>
+  <div class="nav-section">Sections</div>
+  <a class="nav-item active" onclick="navTo('t-demographics')">Demographics</a>
+  <a class="nav-item" onclick="navTo('t-likert')">Survey Items</a>
+  <a class="nav-item" onclick="navTo('t-crosstab')">Results by Subgroup</a>
+</aside>
+
+<main id="t-main">
+  <section id="t-demographics">
+    <h2 class="section-heading">Sample Demographics</h2>
+    <div class="stat-grid" id="t-stat-grid" style="margin-bottom:22px"></div>
+    <p class="section-sub">Percentages may not sum to 100 due to rounding.</p>
+    <div class="demo-grid">
+      <div class="chart-card"><div class="chart-title">Years of Teaching Experience</div><div class="chart-wrap"><canvas id="t-chart-years"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">EdTech Confidence Level</div><div class="chart-wrap"><canvas id="t-chart-edtech"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Familiarity with School AI Policy</div><div class="chart-wrap"><canvas id="t-chart-policy"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Subject Group Distribution</div><div class="chart-wrap"><canvas id="t-chart-subjects"></canvas></div></div>
+    </div>
+  </section>
+
+  <section id="t-likert">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom: 2px solid var(--border); padding-bottom: 14px; margin-bottom: 28px;">
+      <h2 class="section-heading" style="border:none; padding:0; margin:0;">Survey Items — Likert Scale (1–5)</h2>
+      <button class="stats-toggle-btn" id="t-stats-toggle" onclick="toggleTStats()">Show statistics</button>
+    </div>
+    <div class="likert-legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--t-sd)"></div> Strongly disagree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--t-d)"></div> Disagree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--t-n)"></div> Neither</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--t-a)"></div> Agree</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--t-sa)"></div> Strongly agree</div>
+    </div>
+    <div id="t-likert-container"></div>
+  </section>
+
+  <section id="t-crosstab">
+    <h2 class="section-heading">Results by Subgroup</h2>
+    <p class="section-sub">Mean scores (1–5) per Likert item across demographic segments. Cells are shaded relative to the overall mean: <span style="background:#cce0f5; padding:1px 6px; border-radius:3px; font-size:11.5px">above</span> and <span style="background:#f5cccc; padding:1px 6px; border-radius:3px; font-size:11.5px">below</span> average.</p>
+    <div class="tab-row" id="t-ct-tabs"></div>
+    <div id="t-ct-panels"></div>
+  </section>
+</main>
+
+</div><!-- /view-teacher -->
+
+<div id="bar-tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STUDENT DATA
+// ═══════════════════════════════════════════════════════════════
+
+const S_OVERVIEW = {
+  stats: [
+    { num: '276', lbl: 'Total Respondents', sub: 'across 5 schools' },
+    { num: '257', lbl: 'Completed Surveys',  sub: '85.9% completion rate' },
+    { num: '7-pt', lbl: 'Likert Scale',      sub: '1 = Strongly Disagree' },
+    { num: '8',    lbl: 'Core Likert Items', sub: 'across 2 modules' },
+  ]
+};
+
+const S_LIKERT = [
+  { id:'understand', group:'policy', label:'I understand school AI rules', rev: false,
+    dist:[2.952,4.428,4.059,16.9742,10.7011,40.2214,20.6642], mean:5.31, sd:1.53, agree:60.9, disagree:7.4, n:271 },
+  { id:'explained', group:'policy', label:'Teachers explained AI rules', rev: false,
+    dist:[5.9041,7.3801,7.0111,18.4502,12.9151,29.1513,19.1882], mean:4.89, sd:1.77, agree:48.3, disagree:13.3, n:271 },
+  { id:'follow', group:'policy', label:'I follow AI rules', rev: false,
+    dist:[5.1661,2.583,4.797,21.0332,10.3321,30.9963,25.0923], mean:5.22, sd:1.65, agree:56.1, disagree:7.7, n:271 },
+  { id:'discouraged', group:'policy', label:'I use AI when discouraged', rev: true,
+    dist:[13.6531,19.5572,9.9631,25.0923,8.4871,16.6052,6.6421], mean:3.72, sd:1.84, agree:23.2, disagree:33.2, n:271 },
+  { id:'correct', group:'learning', label:'AI produces correct output', rev: false,
+    dist:[1.5504,5.0388,6.2016,24.031,20.9302,29.845,12.4031], mean:4.97, sd:1.41, agree:42.2, disagree:6.6, n:258 },
+  { id:'reliance', group:'learning', label:'I rely on AI over my teacher', rev: true,
+    dist:[13.1783,20.155,7.3643,21.7054,12.4031,17.4419,7.7519], mean:3.83, sd:1.89, agree:25.2, disagree:33.3, n:258 },
+  { id:'helps', group:'learning', label:'AI helps me learn effectively', rev: false,
+    dist:[1.5504,3.1008,1.938,17.8295,14.7287,31.0078,29.845], mean:5.53, sd:1.42, agree:60.9, disagree:4.7, n:258 },
+  { id:'harms', group:'learning', label:'AI harms my understanding', rev: true,
+    dist:[10.0775,14.3411,13.5659,27.1318,12.4031,15.5039,6.9767], mean:3.92, sd:1.73, agree:22.5, disagree:24.4, n:258 },
+];
+
+const S_MX_GROUPS = [
+  { id: 'policy',   label: 'AI Rules & Policy Awareness',  color: '#18795e' },
+  { id: 'learning', label: 'AI Learning & Reliance',        color: '#1e6bb5' },
+];
+
+const S_SHORT_LABELS = {
+  understand:  'I understand AI rules',
+  explained:   'Teachers explained AI rules',
+  follow:      'I follow AI rules',
+  discouraged: 'I use AI when discouraged',
+  correct:     'AI produces correct output',
+  reliance:    'I rely on AI over teacher',
+  helps:       'AI helps me learn',
+  harms:       'AI harms my understanding',
+};
+
+const S_CROSSTAB = {
+  program: {
+    label: 'Academic Programme',
+    groups: ['IB DP','IB Prep / Pre-IB','IGCSE','MYP','Lycée / French Bac','Other'],
+    ns: [93,64,23,5,28,58], totalN: 271,
+    means: {
+      understand:  [5.55,5.03,5.61,6.0,5.21,5.12],
+      explained:   [5.12,4.83,4.96,5.8,4.32,4.78],
+      follow:      [5.39,5.08,4.39,4.6,5.36,5.43],
+      discouraged: [3.95,3.70,3.87,4.0,3.57,3.34],
+      correct:     [4.74,4.95,5.60,5.4,5.07,5.02],
+      reliance:    [3.68,4.08,4.55,4.0,3.86,3.52],
+      helps:       [5.72,5.48,5.95,6.2,5.43,5.17],
+      harms:       [4.01,3.71,4.65,3.2,4.11,3.72],
+    }
+  },
+  classyear: {
+    label: 'Graduation Year',
+    groups: ['2026','2027','2028','2029','2030','Later / Unknown'],
+    ns: [41,50,54,47,34,45], totalN: 271,
+    means: {
+      understand:  [5.34,5.70,5.43,5.32,5.12,4.87],
+      explained:   [4.66,5.70,5.00,4.77,4.41,4.58],
+      follow:      [5.07,5.64,5.15,4.89,5.03,5.47],
+      discouraged: [4.07,3.96,3.81,3.66,3.74,3.04],
+      correct:     [4.74,4.71,4.94,5.13,5.44,4.93],
+      reliance:    [3.71,3.73,4.34,4.00,3.91,3.24],
+      helps:       [5.68,5.60,5.66,5.72,5.85,4.78],
+      harms:       [4.37,4.00,3.90,3.89,3.79,3.60],
+    }
+  },
+  standing: {
+    label: 'Academic Standing',
+    groups: ['Above average','About average','Below average'],
+    ns: [116,144,11], totalN: 271,
+    means: {
+      understand:  [5.49,5.17,5.36],
+      explained:   [4.85,4.94,4.73],
+      follow:      [5.43,5.06,5.18],
+      discouraged: [3.78,3.65,3.91],
+      correct:     [5.05,4.88,5.18],
+      reliance:    [3.56,4.02,4.27],
+      helps:       [5.55,5.49,5.91],
+      harms:       [3.99,3.83,4.27],
+    }
+  },
+  language: {
+    label: 'English Language Background',
+    groups: ['English is strongest','English is one of strong','Not English'],
+    ns: [114,114,43], totalN: 271,
+    means: {
+      understand:  [5.45,5.33,4.91],
+      explained:   [4.90,4.93,4.77],
+      follow:      [5.19,5.30,5.09],
+      discouraged: [3.97,3.39,3.88],
+      correct:     [5.11,4.95,4.62],
+      reliance:    [3.93,3.62,4.18],
+      helps:       [5.53,5.55,5.49],
+      harms:       [3.97,3.77,4.18],
+    }
+  },
+  aifreq: {
+    label: 'AI Usage Frequency',
+    groups: ['Never','1–2 times / week','3–4 times / week','5+ times / week'],
+    ns: [17,115,75,64], totalN: 271,
+    means: {
+      understand:  [4.59,5.31,5.45,5.34],
+      explained:   [4.18,5.03,4.89,4.83],
+      follow:      [5.53,5.59,5.21,4.48],
+      discouraged: [2.65,3.16,3.96,4.72],
+      correct:     [3.75,4.87,5.26,5.14],
+      reliance:    [2.56,3.38,3.90,4.98],
+      helps:       [4.12,5.29,5.85,6.00],
+      harms:       [4.75,3.99,3.90,3.57],
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// STUDENT SUBGROUP — Q7 (AI Usage Frequency) & Q8 Top-3 Use Types
+// ═══════════════════════════════════════════════════════════════
+
+// Keys must match S_CROSSTAB keys. Values: array of % per group, same order as S_CROSSTAB[k].groups.
+// Q7 categories: Never | 1–2 times | 3–4 times | 5+ times
+const S_Q7 = {
+  program: {
+    labels: ['IB DP','IB Prep / Pre-IB','IGCSE','MYP','Lycée / French Bac','Other'],
+    never:  [7.2, 1.6,  0.0, 0.0,  3.6, 13.6],
+    low:    [32.0,40.6, 43.5,60.0, 53.6, 50.8],
+    mid:    [27.8,32.8, 30.4,20.0, 32.1, 20.3],
+    high:   [33.0,25.0, 26.1,20.0, 10.7, 15.3],
+  },
+  classyear: {
+    labels: ['2026','2027','2028','2029','2030','Later / Unknown'],
+    never:  [2.3,  11.8,  0.0,  2.1,  0.0, 20.0],
+    low:    [34.1, 29.4, 36.4, 34.0, 67.6, 57.8],
+    mid:    [25.0, 27.5, 36.4, 36.2, 23.5, 15.6],
+    high:   [38.6, 31.4, 27.3, 27.7,  8.8,  6.7],
+  },
+  standing: {
+    labels: ['Above average','About average','Below average'],
+    never:  [5.1,  6.8,  9.1],
+    low:    [45.3, 37.2, 63.6],
+    mid:    [23.9, 31.8, 18.2],
+    high:   [25.6, 24.3,  9.1],
+  },
+  language: {
+    labels: ['English is strongest','English is one of strong','Not English'],
+    never:  [4.2,  7.0,  9.3],
+    low:    [39.5, 43.0, 44.2],
+    mid:    [24.4, 31.6, 27.9],
+    high:   [31.9, 18.4, 18.6],
+  },
+  aifreq: null, // skip — this tab IS the frequency breakdown
+};
+
+// Q8 top-3 use types: Checking answers | Brainstorming ideas | Summarising texts
+// S_Q8_TOP3: per-group actual top-3 AI use types.
+// Structure: { groupLabels: [...], groups: [ [{label,pct},{label,pct},{label,pct}], ... ] }
+// Each inner array = top-3 items for that group, sorted descending.
+const S_Q8_TOP3 = {
+  program: {
+    groupLabels: ['IB DP','IB Prep / Pre-IB','IGCSE','MYP','Lycée / French Bac','Other'],
+    groups: [
+      [{label:'Checking answers',pct:63.9},{label:'Brainstorming ideas',pct:57.7},{label:'Translation / language support',pct:47.4}],
+      [{label:'Brainstorming ideas',pct:54.7},{label:'Summarizing texts',pct:53.1},{label:'Solving maths & science problems',pct:53.1}],
+      [{label:'Checking answers',pct:82.6},{label:'Brainstorming ideas',pct:69.6},{label:'Solving maths & science problems',pct:65.2}],
+      [{label:'Brainstorming ideas',pct:40.0},{label:'Translation / language support',pct:40.0},{label:'Summarizing texts',pct:20.0}],
+      [{label:'Summarizing texts',pct:67.9},{label:'Checking answers',pct:60.7},{label:'Brainstorming ideas',pct:46.4}],
+      [{label:'Brainstorming ideas',pct:53.4},{label:'Checking answers',pct:48.3},{label:'Translation / language support',pct:44.8}],
+    ]
+  },
+  classyear: {
+    groupLabels: ['2026','2027','2028','2029','2030','Later / Unknown'],
+    groups: [
+      [{label:'Checking answers',pct:70.5},{label:'Brainstorming ideas',pct:68.2},{label:'Solving maths & science problems',pct:54.5}],
+      [{label:'Checking answers',pct:56.9},{label:'Brainstorming ideas',pct:51.0},{label:'Summarizing texts',pct:49.0}],
+      [{label:'Checking answers',pct:61.8},{label:'Summarizing texts',pct:60.0},{label:'Brainstorming ideas',pct:56.4}],
+      [{label:'Checking answers',pct:66.0},{label:'Brainstorming ideas',pct:63.8},{label:'Summarizing texts',pct:57.4}],
+      [{label:'Brainstorming ideas',pct:58.8},{label:'Solving maths & science problems',pct:52.9},{label:'Checking answers',pct:52.9}],
+      [{label:'Brainstorming ideas',pct:37.8},{label:'Checking answers',pct:35.6},{label:'Translation / language support',pct:35.6}],
+    ]
+  },
+  standing: {
+    groupLabels: ['Above average','About average','Below average'],
+    groups: [
+      [{label:'Brainstorming ideas',pct:57.3},{label:'Checking answers',pct:56.4},{label:'Summarizing texts',pct:47.0}],
+      [{label:'Checking answers',pct:58.8},{label:'Brainstorming ideas',pct:54.1},{label:'Summarizing texts',pct:48.6}],
+      [{label:'Brainstorming ideas',pct:63.6},{label:'Solving maths & science problems',pct:63.6},{label:'Summarizing texts',pct:54.5}],
+    ]
+  },
+  language: {
+    groupLabels: ['English is strongest','English is one of strong','Not English'],
+    groups: [
+      [{label:'Brainstorming ideas',pct:61.3},{label:'Checking answers',pct:58.8},{label:'Solving maths & science problems',pct:52.1}],
+      [{label:'Checking answers',pct:63.2},{label:'Brainstorming ideas',pct:53.5},{label:'Summarizing texts',pct:50.9}],
+      [{label:'Translation / language support',pct:58.1},{label:'Summarizing texts',pct:48.8},{label:'Brainstorming ideas',pct:46.5}],
+    ]
+  },
+  aifreq: null,
+};
+
+// ═══════════════════════════════════════════════════════════════
+// TEACHER DATA
+// ═══════════════════════════════════════════════════════════════
+
+const T_OVERVIEW = {
+  stats: [
+    { num: '149', lbl: 'Total Respondents', sub: 'across 5 schools' },
+    { num: '137', lbl: 'Completed Surveys',  sub: '91.9% completion rate' },
+    { num: '5-pt', lbl: 'Likert Scale',      sub: '1 = Strongly Disagree' },
+    { num: '15',   lbl: 'Core Likert Items', sub: 'across 4 modules' },
+  ]
+};
+
+const T_LIKERT = [
+  { id:'planning',   group:'usage',      label:'I use AI for planning / materials / grading',
+    dist:[9.0909,12.5874,11.8881,51.7483,14.6853], mean:3.50, sd:1.16, agree:66.4, disagree:21.7, n:143 },
+  { id:'efficiency', group:'usage',      label:'AI improved my efficiency',
+    dist:[9.7902,5.5944,25.8741,43.3566,15.3846], mean:3.49, sd:1.13, agree:58.7, disagree:15.4, n:143 },
+  { id:'misuse',     group:'classroom',  label:'Students use AI instead of doing work themselves',
+    dist:[1.3986,6.993,16.7832,44.7552,30.0699], mean:3.95, sd:0.94, agree:74.8, disagree:8.4, n:143 },
+  { id:'undetected', group:'classroom',  label:'Students use AI I cannot detect',
+    dist:[2.7972,24.4755,24.4755,35.6643,12.5874], mean:3.31, sd:1.06, agree:48.3, disagree:27.3, n:143 },
+  { id:'feedback',   group:'classroom',  label:'I give feedback on students\' AI use',
+    dist:[2.7972,12.5874,23.0769,53.1469,8.3916], mean:3.52, sd:0.92, agree:61.5, disagree:15.4, n:143 },
+  { id:'transparent',group:'classroom',  label:'Students are transparent about AI use',
+    dist:[11.8881,37.7622,32.1678,15.3846,2.7972], mean:2.59, sd:0.98, agree:18.2, disagree:49.7, n:143 },
+  { id:'detection',  group:'classroom',  label:'I rely on AI detection tools',
+    dist:[14.6853,30.7692,30.7692,19.5804,4.1958], mean:2.68, sd:1.08, agree:23.8, disagree:45.5, n:143 },
+  { id:'hinders',    group:'classroom',  label:'AI hinders accurate student assessment',
+    dist:[4.8951,8.3916,21.6783,30.7692,34.2657], mean:3.81, sd:1.14, agree:65.0, disagree:13.3, n:143 },
+  { id:'implement',  group:'policy',     label:'I implement school AI policy consistently',
+    dist:[2.8777,5.036,35.9712,46.0432,10.0719], mean:3.55, sd:0.85, agree:56.1, disagree:7.9, n:139 },
+  { id:'workable',   group:'policy',     label:'School AI policy is realistic / workable',
+    dist:[2.8777,7.9137,46.0432,38.8489,4.3165], mean:3.34, sd:0.80, agree:43.2, disagree:10.8, n:139 },
+  { id:'adapt',      group:'policy',     label:'I adapt school AI policy for my classroom',
+    dist:[5.036,25.8993,51.0791,14.3885,3.5971], mean:2.86, sd:0.86, agree:18.0, disagree:30.9, n:139 },
+  { id:'useful',     group:'perception', label:'AI is a useful learning tool',
+    dist:[2.1739,5.7971,10.1449,60.1449,21.7391], mean:3.93, sd:0.86, agree:81.9, disagree:8.0, n:138 },
+  { id:'integrate',  group:'perception', label:'AI should be integrated into instruction',
+    dist:[4.3478,13.7681,23.1884,45.6522,13.0435], mean:3.49, sd:1.03, agree:58.7, disagree:18.1, n:138 },
+  { id:'skills',     group:'perception', label:'AI changes prioritised classroom skills',
+    dist:[5.7971,19.5652,16.6667,44.9275,13.0435], mean:3.40, sd:1.12, agree:58.0, disagree:25.4, n:138 },
+  { id:'confident',  group:'perception', label:'I feel confident using AI in my teaching',
+    dist:[3.6232,9.4203,21.7391,52.1739,13.0435], mean:3.62, sd:0.95, agree:65.2, disagree:13.0, n:138 },
+];
+
+const T_MX_GROUPS = [
+  { id: 'usage',      label: "Teacher's Own AI Use",                color: '#1e6bb5' },
+  { id: 'classroom',  label: 'Perceptions of Student AI Behaviour', color: '#b83232' },
+  { id: 'policy',     label: 'AI Policy Implementation',            color: '#18795e' },
+  { id: 'perception', label: 'Attitudes Toward AI in Education',    color: '#b8701a' },
+];
+
+const T_SHORT_LABELS = {
+  planning:    'AI for planning / materials',
+  efficiency:  'AI improved my efficiency',
+  misuse:      'Students use AI instead of working',
+  undetected:  'Undetectable student AI use',
+  feedback:    'I give AI feedback to students',
+  transparent: 'Students transparent about AI',
+  detection:   'I rely on AI detection tools',
+  hinders:     'AI hinders assessment',
+  implement:   'Implement policy consistently',
+  workable:    'Policy is workable',
+  adapt:       'I adapt policy for my class',
+  useful:      'AI is a useful learning tool',
+  integrate:   'AI should be integrated',
+  skills:      'AI changes prioritised skills',
+  confident:   'Confident using AI in teaching',
+};
+
+const T_CROSSTAB = {
+  years: {
+    label: 'Years Teaching',
+    groups: ['0–3 yrs','4–9 yrs','10–19 yrs','20–29 yrs','30+ yrs'],
+    ns: [3,23,50,51,16], totalN: 143,
+    means: {
+      planning:    [4.33,3.43,3.46,3.69,3.00], efficiency:  [3.67,3.65,3.50,3.47,3.25],
+      misuse:      [3.67,3.87,4.10,4.02,3.44], undetected:  [3.33,2.87,3.64,3.22,3.19],
+      feedback:    [2.67,3.61,3.58,3.53,3.31], transparent: [2.67,2.48,2.42,2.75,2.81],
+      detection:   [2.67,2.74,2.80,2.71,2.12], hinders:     [4.00,4.17,4.18,3.45,3.25],
+      implement:   [3.33,3.57,3.67,3.49,3.44], workable:    [3.33,3.22,3.29,3.43,3.38],
+      adapt:       [3.33,2.83,2.96,2.88,2.44], useful:      [4.33,4.04,3.96,3.98,3.50],
+      integrate:   [4.00,3.70,3.38,3.54,3.31], skills:      [3.67,3.52,3.42,3.40,3.12],
+      confident:   [4.00,3.61,3.62,3.67,3.38],
+    }
+  },
+  policy: {
+    label: 'Policy Familiarity',
+    groups: ['Not at all','Slightly','Moderately','Familiar','Very familiar'],
+    ns: [12,12,36,56,27], totalN: 143,
+    means: {
+      planning:    [3.58,3.92,3.39,3.45,3.56], efficiency:  [3.25,3.83,3.44,3.43,3.63],
+      misuse:      [3.42,4.25,3.97,3.88,4.19], undetected:  [3.08,3.67,3.44,3.25,3.19],
+      feedback:    [2.92,3.08,3.67,3.54,3.74], transparent: [2.83,2.33,2.56,2.62,2.59],
+      detection:   [1.92,2.83,2.75,2.82,2.56], hinders:     [2.92,4.42,4.14,3.73,3.67],
+      implement:   [2.33,3.33,3.50,3.78,3.81], workable:    [2.75,3.25,3.09,3.56,3.52],
+      adapt:       [2.50,3.25,2.91,2.89,2.70], useful:      [4.00,4.25,3.79,3.96,3.89],
+      integrate:   [3.83,4.17,3.38,3.34,3.48], skills:      [3.67,3.83,3.56,3.28,3.11],
+      confident:   [3.42,3.50,3.26,3.58,4.26],
+    }
+  },
+  subject: {
+    label: 'Subject Group',
+    groups: ['STEM','Humanities','Languages','Arts','Other'],
+    ns: [38,23,52,21,9], totalN: 143,
+    means: {
+      planning:    [3.13,3.43,3.83,3.33,3.78], efficiency:  [3.13,3.61,3.65,3.52,3.67],
+      misuse:      [3.97,4.17,3.79,4.00,4.11], undetected:  [3.37,3.70,3.04,3.71,2.67],
+      feedback:    [3.37,3.70,3.60,3.33,3.67], transparent: [2.68,2.30,2.63,2.57,2.78],
+      detection:   [2.47,3.17,2.60,2.81,2.44], hinders:     [3.82,4.04,3.63,4.00,3.78],
+      implement:   [3.58,3.55,3.47,3.81,3.33], workable:    [3.50,3.09,3.29,3.52,3.11],
+      adapt:       [2.71,3.27,2.90,2.62,2.78], useful:      [3.89,3.59,4.02,4.05,4.22],
+      integrate:   [3.47,3.05,3.61,3.55,3.89], skills:      [3.18,3.36,3.49,3.35,4.00],
+      confident:   [3.50,3.32,3.80,3.60,3.89],
+    }
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — SHARED HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function makeTooltipCb(totalN) {
+  return { label: ctx => {
+    const pct = ctx.raw;
+    const abs = Math.round(pct / 100 * totalN);
+    return ` ${pct}%  (n = ${abs})`;
+  }};
+}
+
+function navTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function switchTab(tabsId, panelsId, key, btn) {
+  document.querySelectorAll(`#${tabsId} .tab-btn`).forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`#${panelsId} .tab-panel`).forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`${panelsId}-${key}`).classList.add('active');
+}
+
+function heatColor(val, total, scale) {
+  const d = val - total;
+  const intensity = Math.min(1, Math.abs(d) / scale);
+  if (d > 0.08) {
+    return `hsl(210,${Math.round(intensity*75)}%,${Math.round(93-intensity*28)}%)`;
+  } else if (d < -0.08) {
+    return `hsl(0,${Math.round(intensity*70)}%,${Math.round(93-intensity*28)}%)`;
+  }
+  return '#f8f7f4';
+}
+function heatTextColor(val, total, thresh) {
+  return Math.abs(val - total) > thresh ? '#fff' : 'var(--text)';
+}
+
+const chartBaseOpts = (totalN, xMax) => ({
+  indexAxis: 'y',
+  plugins: { legend: { display: false }, tooltip: { callbacks: makeTooltipCb(totalN) } },
+  scales: {
+    x: { max: xMax, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 }, callback: v => v+'%' } },
+    y: { grid: { display: false }, ticks: { font: { size: 11.5 } } }
+  },
+  responsive: true, maintainAspectRatio: false,
+  animation: { duration: 600, easing: 'easeOutQuart' }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — STUDENT
+// ═══════════════════════════════════════════════════════════════
+
+function renderSOverview() {
+  document.getElementById('s-stat-grid').innerHTML = S_OVERVIEW.stats.slice(0,2).map(s =>
+    `<div class="stat-card"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div><div class="sub">${s.sub}</div></div>`
+  ).join('');
+}
+
+function renderSDemographics() {
+  const N = 276;
+  new Chart(document.getElementById('s-chart-program'), {
+    type:'bar', data:{ labels:['IB DP','IB Prep / Pre-IB','IGCSE','MYP','Lycée / French Bac','Other / Unknown'],
+    datasets:[{data:[35.1,23.2,8.3,1.8,10.1,21.4], backgroundColor:'#1e3054cc', borderRadius:3}]},
+    options: chartBaseOpts(N, 45)
+  });
+  new Chart(document.getElementById('s-chart-year'), {
+    type:'bar', data:{ labels:['2026','2027','2028','2029','2030','Later / Unknown'],
+    datasets:[{data:[15.9,18.5,19.9,17.0,12.3,16.3], backgroundColor:'#18795ecc', borderRadius:3}]},
+    options: chartBaseOpts(N, 30)
+  });
+  new Chart(document.getElementById('s-chart-aifreq'), {
+    type:'bar', data:{ labels:['Never','1–2 times / week','3–4 times / week','5 or more times'],
+    datasets:[{data:[6.2,41.7,27.9,24.3], backgroundColor:'#1e6bb5cc', borderRadius:3}]},
+    options: chartBaseOpts(N, 50)
+  });
+  new Chart(document.getElementById('s-chart-standing'), {
+    type:'bar', data:{ labels:['Above average','About average','Below average'],
+    datasets:[{data:[42.4,53.6,4.0], backgroundColor:'#b8701acc', borderRadius:3}]},
+    options: chartBaseOpts(N, 65)
+  });
+  new Chart(document.getElementById('s-chart-language'), {
+    type:'bar', data:{ labels:['English is strongest','English is one of strong','Not English'],
+    datasets:[{data:[43.1,41.3,15.6], backgroundColor:'#b83232cc', borderRadius:3}]},
+    options: chartBaseOpts(N, 55)
+  });
+  new Chart(document.getElementById('s-chart-subject'), {
+    type:'bar', data:{ labels:['Maths & Sciences','Humanities','Arts','Languages'],
+    datasets:[{data:[42.4,30.8,18.1,8.7], backgroundColor:'#6b4fa0cc', borderRadius:3}]},
+    options: chartBaseOpts(N, 55)
+  });
+  // Q8 — AI use types (multi-select, full-width)
+  new Chart(document.getElementById('s-chart-aiuse'), {
+    type: 'bar',
+    data: {
+      labels: ['Checking answers','Brainstorming ideas','Summarizing texts','Translation / language','Solving maths & science','Organizing study plans','Drafting writing','Not used for school tasks'],
+      datasets: [{ data: [57.6, 55.8, 48.2, 44.6, 43.5, 26.1, 24.3, 5.4], backgroundColor: '#1e6bb5cc', borderRadius: 3 }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%  (n = ${Math.round(ctx.raw/100*276)})` }}},
+      scales: {
+        x: { max: 70, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 }, callback: v => v+'%' }, title: { display: true, text: '% of respondents (multi-select, totals exceed 100%)', font: { size: 10 }, color: '#9997aa' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11.5 }, autoSkip: false } }
+      },
+      responsive: true, maintainAspectRatio: false, animation: { duration: 600, easing: 'easeOutQuart' }
+    }
+  });
+  new Chart(document.getElementById('s-chart-aienglish'), {
+    type: 'bar',
+    data: {
+      labels: ['Yes — primarily in English', 'Sometimes in English', 'No — not primarily in English'],
+      datasets: [{ data: [37.7, 30.4, 31.9], backgroundColor: '#18795ecc', borderRadius: 3 }]
+    },
+    options: chartBaseOpts(276, 50)
+  });
+}
+
+function makeSLikertBar(item) {
+  const fullLabels = ['Strongly disagree','Disagree','Somewhat disagree','Neutral','Somewhat agree','Agree','Strongly agree'];
+  const classes = ['bar-sd','bar-d','bar-swd','bar-n','bar-swa','bar-a','bar-sa'];
+  const total = item.dist.reduce((a,b) => a+b, 0);
+  const segs = item.dist.map((rawPct, i) => {
+    const pct = total > 0 ? rawPct / total * 100 : 0;
+    const show = pct >= 8;
+    const abs = Math.round(rawPct / 100 * item.n);
+    return `<div class="bar-seg ${classes[i]}" style="width:${pct.toFixed(4)}%" data-tip="${fullLabels[i]}: ${rawPct.toFixed(1)}% &nbsp;·&nbsp; ${abs} of ${item.n} respondents">${show ? rawPct.toFixed(1)+'%' : ''}</div>`;
+  }).join('');
+  const revBadge = '';
+  return `<div class="likert-item">
+    <div class="likert-top"><div class="likert-label">${item.label}${revBadge}</div></div>
+    <div class="likert-bar">${segs}</div>
+    <div class="likert-footer">
+      <div class="lf-item" style="color:var(--c-sd)"><div class="lf-dot" style="background:var(--c-sd)"></div>${item.disagree}% disagree</div>
+      <div class="lf-item" style="color:var(--text-3)">${item.dist[3].toFixed(1)}% neutral</div>
+      <div class="lf-item" style="color:var(--c-sa)">${item.agree}% agree</div>
+    </div>
+    <div class="likert-meta">
+      <div class="meta-item"><div class="meta-val">${item.mean.toFixed(2)}</div><div class="meta-lbl">Mean / 7</div></div>
+      <div class="meta-item"><div class="meta-val">${item.sd.toFixed(2)}</div><div class="meta-lbl">Std Dev</div></div>
+      <div class="meta-item"><div class="meta-val">${item.agree}%</div><div class="meta-lbl">Agree+</div></div>
+      <div class="meta-item"><div class="meta-val">${item.disagree}%</div><div class="meta-lbl">Disagree+</div></div>
+      <div class="meta-item"><div class="meta-val">${item.dist[3].toFixed(1)}%</div><div class="meta-lbl">Neutral</div></div>
+      <div class="meta-item"><div class="meta-val">${item.n}</div><div class="meta-lbl">N</div></div>
+    </div>
+  </div>`;
+}
+
+function renderSLikert() {
+  document.getElementById('s-likert-container').innerHTML = S_MX_GROUPS.map(g => {
+    const items = S_LIKERT.filter(i => i.group === g.id);
+    return `<div class="mx-block">
+      <div class="mx-header">
+        <div class="mx-dot" style="background:${g.color}"></div>
+        <div class="mx-label">${g.label}</div>
+        <div class="mx-count">${items.length} items</div>
+      </div>
+      ${items.map(makeSLikertBar).join('')}
+    </div>`;
+  }).join('');
+}
+
+function makeSubgroupBarChart(canvasId, title, labels, datasets, maxX, note) {
+  const colors = ['#1e6bb5cc','#18795ecc','#b8701acc'];
+  const canvasH = Math.max(120, labels.length * 28 + 60);
+  return `<div style="margin-bottom:28px">
+    <div class="chart-title" style="margin-bottom:10px">${title}</div>
+    ${note ? `<div style="font-size:11px;color:var(--text-3);margin-bottom:8px">${note}</div>` : ''}
+    <div style="position:relative;height:${canvasH}px"><canvas id="${canvasId}"></canvas></div>
+  </div>`;
+}
+
+const _subgroupChartRegistry = {};
+
+function renderSCrosstab() {
+  // Put institution first, then the rest in original order
+  const allKeys = ['institution', ...Object.keys(S_CROSSTAB).filter(k => k !== 'institution')];
+  const keys = allKeys.filter(k => S_CROSSTAB[k]);
+
+  document.getElementById('s-ct-tabs').innerHTML = keys.map((k,i) =>
+    `<button class="tab-btn${i===0?' active':''}" onclick="switchSCrosstabTab('${k}',this)">${S_CROSSTAB[k].label}</button>`
+  ).join('');
+
+  document.getElementById('s-ct-panels').innerHTML = keys.map((k,i) => {
+    const ct = S_CROSSTAB[k];
+    const groupBlocks = S_MX_GROUPS.map(grp => {
+      const grpItems = S_LIKERT.filter(l => l.group === grp.id);
+      const rows = grpItems.map(item => {
+        const total = item.mean;
+        const cells = ct.means[item.id].map(m => {
+          const bg = heatColor(m, total, 1.4);
+          const tc = heatTextColor(m, total, 1.1);
+          return `<td style="background:${bg};color:${tc}">${m.toFixed(2)}</td>`;
+        }).join('');
+        return `<tr><td class="item-name">${S_SHORT_LABELS[item.id]}</td>${cells}<td class="total-val">${total.toFixed(2)}</td></tr>`;
+      }).join('');
+      return `<tr class="group-row"><td colspan="${ct.groups.length+2}" style="border-left:4px solid ${grp.color}">${grp.label}</td></tr>${rows}`;
+    }).join('');
+
+    const hasQ7  = S_Q7[k] && S_Q7[k] !== null;
+    const hasQ8  = S_Q8_TOP3[k] && S_Q8_TOP3[k] !== null;
+    const barH7  = hasQ7  ? Math.max(110, (S_Q7[k].labels.length  * 30 + 70)) : 0;
+    const barH8  = 260; // fixed height for vertical bar chart
+
+    const barSection = (hasQ7 || hasQ8) ? `
+      <div class="subgroup-bar-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px">
+        ${hasQ7 ? `<div>
+          <div class="chart-title" style="margin-bottom:8px">AI Usage Frequency (per school week)</div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">% of respondents per category</div>
+          <div style="position:relative;height:${barH7}px"><canvas id="sq7-${k}"></canvas></div>
+        </div>` : '<div></div>'}
+        ${hasQ8 ? `<div>
+          <div class="chart-title" style="margin-bottom:8px">Top 3 AI Use Types (last 30 days)</div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">% selecting each option (multi-select — totals may exceed 100%)</div>
+          <div style="position:relative;height:${barH8}px"><canvas id="sq8-${k}"></canvas></div>
+        </div>` : '<div></div>'}
+      </div>` : '';
+
+    return `<div class="tab-panel${i===0?' active':''}" id="s-ct-panels-${k}">
+      ${barSection}
+      <table class="heat-table">
+        <thead>
+          <tr><th class="item-col">Survey Item</th>${ct.groups.map(g=>`<th>${g}</th>`).join('')}<th class="total-col">Overall</th></tr>
+          <tr class="n-row"><th class="item-col">N (completed)</th>${ct.ns.map(n=>`<th>N = ${n}</th>`).join('')}<th class="total-col">${ct.totalN}</th></tr>
+        </thead>
+        <tbody>${groupBlocks}</tbody>
+      </table>
+      <div class="heat-note">Cells shaded relative to each item's overall mean. Blue = above average, red = below average.</div>
+    </div>`;
+  }).join('');
+
+  // Draw charts for the first (visible) tab immediately, register others lazily
+  keys.forEach((k, i) => {
+    if (i === 0) drawSubgroupCharts(k);
+  });
+}
+
+function drawSubgroupCharts(k) {
+  if (_subgroupChartRegistry[k]) return;
+  _subgroupChartRegistry[k] = true;
+
+  const FREQ_COLORS = ['#c8d8e8','#6fa8d6','#2e6fb5','#1a3f6f'];
+
+  // Q7 — frequency stacked bar
+  const q7 = S_Q7[k];
+  if (q7) {
+    const el = document.getElementById(`sq7-${k}`);
+    if (el && !el._chartInstance) {
+      el._chartInstance = new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: q7.labels,
+          datasets: [
+            { label: 'Never',           data: q7.never,  backgroundColor: FREQ_COLORS[0], borderRadius: 0 },
+            { label: '1–2 times/week',  data: q7.low,    backgroundColor: FREQ_COLORS[1], borderRadius: 0 },
+            { label: '3–4 times/week',  data: q7.mid,    backgroundColor: FREQ_COLORS[2], borderRadius: 0 },
+            { label: '5+ times/week',   data: q7.high,   backgroundColor: FREQ_COLORS[3], borderRadius: 0 },
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 10.5 }, boxWidth: 12, padding: 10 } },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } }
+          },
+          scales: {
+            x: { stacked: true, max: 100, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10.5 }, callback: v => v+'%' } },
+            y: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } }
+          },
+          animation: { duration: 500 }
+        }
+      });
+    }
+  }
+
+  // Q8 top-3 — grouped bar
+  const q8 = S_Q8_TOP3[k];
+  if (q8) {
+    const el = document.getElementById(`sq8-${k}`);
+    if (el && !el._chartInstance) {
+      // Collect all unique item labels across all groups (preserving first-seen order)
+      const allLabels = [];
+      q8.groups.forEach(g => g.forEach(item => {
+        if (!allLabels.includes(item.label)) allLabels.push(item.label);
+      }));
+
+      // Distinct color palette — one color per unique item label
+      const ITEM_PALETTE = [
+        '#1e6bb5','#18795e','#b8701a','#b83232','#6b4fa0',
+        '#2a9d8f','#e76f51','#457b9d','#c77dff','#f4a261',
+      ];
+      const itemColorMap = {};
+      allLabels.forEach((lbl, i) => { itemColorMap[lbl] = ITEM_PALETTE[i % ITEM_PALETTE.length] + 'cc'; });
+
+      // One dataset per unique item; each dataset has a value for groups where it appears in top-3, null elsewhere
+      const datasets = allLabels.map(lbl => ({
+        label: lbl,
+        data: q8.groups.map(g => {
+          const found = g.find(item => item.label === lbl);
+          return found ? found.pct : null;
+        }),
+        backgroundColor: itemColorMap[lbl],
+        borderRadius: 3,
+        skipNull: true,
+      }));
+
+      el._chartInstance = new Chart(el, {
+        type: 'bar',
+        data: { labels: q8.groupLabels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 10.5 }, boxWidth: 12, padding: 10 } },
+            tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ` ${ctx.dataset.label}: ${ctx.raw}%` : null } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
+            y: { max: 90, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10.5 }, callback: v => v+'%' } }
+          },
+          animation: { duration: 500 }
+        }
+      });
+    }
+  }
+}
+
+function switchSCrosstabTab(k, btn) {
+  document.querySelectorAll('#s-ct-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#s-ct-panels .tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`s-ct-panels-${k}`).classList.add('active');
+  // Draw charts lazily on first view
+  drawSubgroupCharts(k);
+}
+
+let sStatsVisible = false;
+function toggleSStats() {
+  sStatsVisible = !sStatsVisible;
+  document.querySelectorAll('#view-student .likert-meta').forEach(el => el.classList.toggle('visible', sStatsVisible));
+  const btn = document.getElementById('s-stats-toggle');
+  btn.textContent = sStatsVisible ? 'Hide statistics' : 'Show statistics';
+  btn.classList.toggle('active', sStatsVisible);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — TEACHER
+// ═══════════════════════════════════════════════════════════════
+
+let tDemoRendered = false;
+
+function renderTOverview() {
+  document.getElementById('t-stat-grid').innerHTML = T_OVERVIEW.stats.slice(0,2).map(s =>
+    `<div class="stat-card"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div><div class="sub">${s.sub}</div></div>`
+  ).join('');
+}
+
+function renderTDemographics() {
+  if (tDemoRendered) return;
+  tDemoRendered = true;
+  const N = 143;
+  new Chart(document.getElementById('t-chart-years'), {
+    type:'bar', data:{ labels:['0–3 years','4–9 years','10–19 years','20–29 years','30+ years'],
+    datasets:[{data:[2.1,16.1,35.0,35.7,11.2], backgroundColor:'#1e3054cc', borderRadius:3}]},
+    options: chartBaseOpts(N, 45)
+  });
+  new Chart(document.getElementById('t-chart-edtech'), {
+    type:'bar', data:{ labels:['Slightly confident','Moderately confident','Confident','Very confident'],
+    datasets:[{data:[5.6,34.3,41.3,18.9], backgroundColor:'#18795ecc', borderRadius:3}]},
+    options: chartBaseOpts(N, 50)
+  });
+  new Chart(document.getElementById('t-chart-policy'), {
+    type:'bar', data:{ labels:['Not at all familiar','Slightly familiar','Moderately familiar','Familiar','Very familiar'],
+    datasets:[{data:[8.4,8.4,25.2,39.2,18.9], backgroundColor:'#b8701acc', borderRadius:3}]},
+    options: chartBaseOpts(N, 50)
+  });
+  new Chart(document.getElementById('t-chart-subjects'), {
+    type:'bar', data:{ labels:['STEM (N=38)','Humanities (N=23)','Languages (N=52)','Arts (N=21)','Other (N=9)'],
+    datasets:[{data:[25.5,15.4,34.9,14.1,10.1], backgroundColor:'#b83232cc', borderRadius:3}]},
+    options: chartBaseOpts(N, 45)
+  });
+}
+
+function makeTLikertBar(item) {
+  const fullLabels = ['Strongly disagree','Disagree','Neither agree nor disagree','Agree','Strongly agree'];
+  const classes = ['bar-t-sd','bar-t-d','bar-t-n','bar-t-a','bar-t-sa'];
+  const total = item.dist.reduce((a,b) => a+b, 0);
+  const segs = item.dist.map((rawPct, i) => {
+    const pct = total > 0 ? rawPct / total * 100 : 0;
+    const show = pct >= 10;
+    const abs = Math.round(rawPct / 100 * item.n);
+    return `<div class="bar-seg ${classes[i]}" style="width:${pct.toFixed(4)}%" data-tip="${fullLabels[i]}: ${rawPct.toFixed(1)}% &nbsp;·&nbsp; ${abs} of ${item.n} respondents">${show ? rawPct.toFixed(1)+'%' : ''}</div>`;
+  }).join('');
+  return `<div class="likert-item">
+    <div class="likert-top"><div class="likert-label">${item.label}</div></div>
+    <div class="likert-bar">${segs}</div>
+    <div class="likert-footer">
+      <div class="lf-item" style="color:var(--t-sd)"><div class="lf-dot" style="background:var(--t-sd)"></div>${item.disagree}% disagree</div>
+      <div class="lf-item" style="color:var(--text-3)">${item.dist[2].toFixed(1)}% neutral</div>
+      <div class="lf-item" style="color:var(--t-sa)">${item.agree}% agree</div>
+    </div>
+    <div class="likert-meta">
+      <div class="meta-item"><div class="meta-val">${item.mean.toFixed(2)}</div><div class="meta-lbl">Mean / 5</div></div>
+      <div class="meta-item"><div class="meta-val">${item.sd.toFixed(2)}</div><div class="meta-lbl">Std Dev</div></div>
+      <div class="meta-item"><div class="meta-val">${item.agree}%</div><div class="meta-lbl">Agree+</div></div>
+      <div class="meta-item"><div class="meta-val">${item.disagree}%</div><div class="meta-lbl">Disagree+</div></div>
+      <div class="meta-item"><div class="meta-val">${item.dist[2].toFixed(1)}%</div><div class="meta-lbl">Neutral</div></div>
+      <div class="meta-item"><div class="meta-val">${item.n}</div><div class="meta-lbl">N</div></div>
+    </div>
+  </div>`;
+}
+
+function renderTLikert() {
+  document.getElementById('t-likert-container').innerHTML = T_MX_GROUPS.map(g => {
+    const items = T_LIKERT.filter(i => i.group === g.id);
+    return `<div class="mx-block">
+      <div class="mx-header">
+        <div class="mx-dot" style="background:${g.color}"></div>
+        <div class="mx-label">${g.label}</div>
+        <div class="mx-count">${items.length} items</div>
+      </div>
+      ${items.map(makeTLikertBar).join('')}
+    </div>`;
+  }).join('');
+}
+
+function renderTCrosstab() {
+  // Put institution first, then the rest in original order (mirrors student side)
+  const allKeys = ['institution', ...Object.keys(T_CROSSTAB).filter(k => k !== 'institution')];
+  const keys = allKeys.filter(k => T_CROSSTAB[k]);
+  document.getElementById('t-ct-tabs').innerHTML = keys.map((k,i) =>
+    `<button class="tab-btn${i===0?' active':''}" onclick="switchTab('t-ct-tabs','t-ct-panels','${k}',this)">${T_CROSSTAB[k].label}</button>`
+  ).join('');
+  document.getElementById('t-ct-panels').innerHTML = keys.map((k,i) => {
+    const ct = T_CROSSTAB[k];
+    const groupBlocks = T_MX_GROUPS.map(grp => {
+      const grpItems = T_LIKERT.filter(l => l.group === grp.id);
+      const rows = grpItems.map(item => {
+        const total = item.mean;
+        const cells = ct.means[item.id].map(m => {
+          const bg = heatColor(m, total, 0.9);
+          const tc = heatTextColor(m, total, 0.7);
+          return `<td style="background:${bg};color:${tc}">${m.toFixed(2)}</td>`;
+        }).join('');
+        return `<tr><td class="item-name">${T_SHORT_LABELS[item.id]}</td>${cells}<td class="total-val">${total.toFixed(2)}</td></tr>`;
+      }).join('');
+      return `<tr class="group-row"><td colspan="${ct.groups.length+2}" style="border-left:4px solid ${grp.color}">${grp.label}</td></tr>${rows}`;
+    }).join('');
+    return `<div class="tab-panel${i===0?' active':''}" id="t-ct-panels-${k}">
+      <table class="heat-table">
+        <thead>
+          <tr><th class="item-col">Survey Item</th>${ct.groups.map(g=>`<th>${g}</th>`).join('')}<th class="total-col">Overall</th></tr>
+          <tr class="n-row"><th class="item-col">N (completed)</th>${ct.ns.map(n=>`<th>N = ${n}</th>`).join('')}<th class="total-col">${ct.totalN}</th></tr>
+        </thead>
+        <tbody>${groupBlocks}</tbody>
+      </table>
+      <div class="heat-note">Cells shaded relative to each item's overall mean. Blue = above average, red = below average.</div>
+    </div>`;
+  }).join('');
+}
+
+let tStatsVisible = false;
+function toggleTStats() {
+  tStatsVisible = !tStatsVisible;
+  document.querySelectorAll('#view-teacher .likert-meta').forEach(el => el.classList.toggle('visible', tStatsVisible));
+  const btn = document.getElementById('t-stats-toggle');
+  btn.textContent = tStatsVisible ? 'Hide statistics' : 'Show statistics';
+  btn.classList.toggle('active', tStatsVisible);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIEW TOGGLE
+// ═══════════════════════════════════════════════════════════════
+
+function setView(view) {
+  const isStudent = view === 'student';
+  document.getElementById('view-student').style.display = isStudent ? 'flex' : 'none';
+  document.getElementById('view-teacher').style.display = isStudent ? 'none' : 'flex';
+  document.getElementById('btn-student').classList.toggle('active', isStudent);
+  document.getElementById('btn-teacher').classList.toggle('active', !isStudent);
+  if (!isStudent) {
+    renderTDemographics();
+    // scroll teacher view to top
+    const tm = document.getElementById('t-main');
+    if (tm) tm.scrollTop = 0;
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOOLTIP
+// ═══════════════════════════════════════════════════════════════
+const tip = document.createElement('div');
+tip.id = 'bar-tooltip';
+document.body.appendChild(tip);
+
+document.addEventListener('mouseover', e => {
+  const seg = e.target.closest('.bar-seg[data-tip]');
+  if (seg) { tip.innerHTML = seg.dataset.tip; tip.classList.add('show'); }
+});
+document.addEventListener('mouseout', e => {
+  if (e.target.closest('.bar-seg[data-tip]')) tip.classList.remove('show');
+});
+document.addEventListener('mousemove', e => {
+  if (tip.classList.contains('show')) {
+    tip.style.left = e.clientX + 'px';
+    tip.style.top  = (e.clientY - 14) + 'px';
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INTERSECTION OBSERVER (nav highlight)
+// ═══════════════════════════════════════════════════════════════
+
+function makeObserver(sectionIds, navEl) {
+  return new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navEl.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const nav = navEl.querySelector(`.nav-item[onclick*="${e.target.id}"]`);
+        if (nav) nav.classList.add('active');
+      }
+    });
+  }, { threshold: 0.25 });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Student
+  renderSOverview();
+  renderSDemographics();
+  renderSLikert();
+  renderSCrosstab();
+
+  // Teacher (non-chart parts only; charts lazy-init on first view)
+  renderTOverview();
+  renderTLikert();
+  renderTCrosstab();
+
+  // Observers
+  const sObs = makeObserver([], document.getElementById('s-nav'));
+  ['s-demographics','s-likert','s-crosstab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) sObs.observe(el);
+  });
+
+  const tObs = makeObserver([], document.getElementById('t-nav'));
+  ['t-demographics','t-likert','t-crosstab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) tObs.observe(el);
+  });
+});
+</script>
+</body>
+</html>
